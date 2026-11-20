@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Novel Studio & Web Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        /*
+        =============================================================================
+        📌 ÁREA DE CONFIGURAÇÃO — É AQUI QUE VOCÊ EDITA O SITE
+        =============================================================================
+        */
+
+        // 1. ROTEIRO: diálogos e perguntas, na ordem em que aparecem.
+        //
+        // Passo simples:
+        //   { speaker: "Nome", text: "Fala..." }
+        //
+        // Campos opcionais em qualquer passo:
+        //   id:   "nome_unico"   → rótulo para outros passos "pularem" até aqui
+        //   goto: "id_destino"   → depois deste passo, vai para o passo com esse id
+        //
+        // Passo com PERGUNTA (adicione o campo "question"):
+        //   question: {
+        //     type: "text",            // resposta digitada
+        //     key: "nome",             // nome da variável onde a resposta fica guardada
+        //     placeholder: "Digite...",// (opcional) texto de ajuda no campo
+        //     maxLength: 40,           // (opcional) limite de caracteres
+        //     reply: "Prazer, {nome}!",// (opcional) fala exibida logo após a resposta
+        //     replySpeaker: "Nome",    // (opcional) quem diz o reply (padrão: o mesmo speaker)
+        //     goto: "id_destino"       // (opcional) para onde ir depois da resposta
+        //   }
+        //   question: {
+        //     type: "choice",          // escolha entre botões
+        //     key: "caminho",
+        //     options: [
+        //       { label: "Texto do botão", value: "valor_guardado", reply: "...", goto: "id_destino" },
+        //       { label: "Outro botão" }   // value, reply e goto são opcionais
+        //     ]
+        //   }
+        //
+        // Use {chave} em qualquer fala ou caixa para inserir a resposta guardada.
+        // Exemplo: "Olá, {nome}!"   (se ainda não foi respondida, aparece "—")
+        // Quebras de linha com \n funcionam.
+        const dialogues = [
+            {
+                speaker: "T0xITw==",
+                text: "Como você se sente hoje? É um belo dia, não acha?"
+            },
+            {
+                speaker: "T0xITw==",
+                text: "Mas você está aqui, sentado de frente para o computador."
+            },
+            // PERGUNTA DIGITADA
+            {
+                speaker: "T0xITw==",
+                text: "Antes de continuarmos... como devo te chamar?",
+                question: {
+                    type: "text",
+                    key: "nome",
+                    placeholder: "Seja sincero.",
+                    reply: "{nome}, é um belo nome."
+                }
+            },
+            {
+                speaker: "T0xITw==",
+                text: "Qual a sua idade, {nome}?",
+                question: {
+                    type: "text",
+                    key: "idade",
+                    placeholder: "Não fuja.",
+                    reply: "Então você tem {idade} anos, {nome}."
+                }
+            },
+    
+            {
+                speaker: "T0xITw==",
+                text: "Você já pensou sobre a morte, {nome}?"
+            },
+            {
+                speaker: "T0xITw==",
+                text: "Você tem medo da morte, {nome}?",
+                question: {
+                    type: "choice",
+                    key: "caminho",
+                    options: [
+                        { label: "Sim, tenho medo da morte.", value: "sim", reply: "Então você é verdadeiro consigo mesmo.", goto: "sim" },
+                        { label: "Não, não tenho medo da morte.", value: "nao", reply: "Você é um mentiroso.", goto: "nao" }
+                    ]
+                }
+            },
+            { id: "sim", speaker: "T0xITw==", text: "Mas será que você continuará assim?", goto: "sim2" },
+            { id: "nao", speaker: "T0xITw==", text: "Não importa. O único a quem está enganando é a si mesmo.", goto: "nao2" },
+            {
+                id: "sim2",
+                speaker: "T0xITw==",
+                text: "Bem, sua resposta não importa {nome}. Você é apenas um mero humano.", goto: "sim3"
+    
+            },
+            {
+                id: "sim3",
+                speaker: "T0xITw==",
+                text: "Então, me diga, {nome}, por que você sente esse medo?",
+                question: {
+                    type: "text",
+                    key: "motivo",
+                    placeholder: "Ainda não é sua hora.",
+                    reply: "{motivo}. Que estúpido. ",
+                    goto: "sim4"
+                },
+            },
+            {
+                id: "nao2",
+                speaker: "T0xITw==",
+                text: "Será que sua enganação algum dia terá fim, {nome}?", goto: "nao3"
+            },
+            {
+                id: "sim4",
+                speaker: "T0xITw==",
+                text: "Você acha que a morte é o fim de tudo, {nome}?",
+                question: {
+                    type: "choice",
+                    key: "fim",
+                    options: [
+                        { label: "Sim, a morte é o fim de tudo.", value: "sim", reply: "Será que é mesmo?", goto: "sim5" },
+                        { label: "Não, a morte não é o fim de tudo.", value: "nao", reply: "Será que é mesmo?", goto: "nao3" }
+                    ]
+                }
+            },
+            {
+                id: "sim5",
+                speaker: "T0xITw==",
+                text: "Então quem criou essa ilusão?\nSerá que fui eu? Será que foi você? Ou será que foi alguém acima de nós dois?", goto: "fim1"
+            },
+            {
+                id: "nao3",
+                speaker: "T0xITw==",
+                text: "Isso não importa. Alguma hora você perceberá.\nE quando isso acontecer, {nome}, você lembrará de mim. E eu estarei esperando por você.", goto: "fim1"
+            },
+            {
+                id: "fim1",
+                speaker: "T0xITw==",
+                text: "Será que quando chegarmos ao fim, poderemos nos encontrar novamente, {nome}?"
+            },
+            {
+                id:"fim1", 
+                speaker: "T0xITw==",
+                text: "Não por meio desta tela, mas com nossos corpos reais, nossas almas."
+            },
+            {
+                speaker: "T0xITw==",
+                text: "Então aí eu poderei entrar dentro de você. Na sua carne."
+            },
+            {
+                speaker: "T0xITw==",
+                text: "Tocar seu coração."
+            }
+        ];
+
+        // 2. CAIXAS DE TEXTO LIVRES / FLUTUANTES
+        // Está vazia por padrão. Para adicionar uma, coloque um bloco como o exemplo abaixo dentro da lista.
+        //   x, y  → posição em pixels a partir do canto superior esquerdo
+        //   width → largura em pixels
+        // O conteúdo aceita {chave} das respostas e \n para quebra de linha.
+        //
+        //   {
+        //       title: "Notas da Cena",
+        //       content: "Viajante: {nome}\nCaminho escolhido: {caminho}",
+        //       x: window.innerWidth > 768 ? window.innerWidth - 340 : 20,
+        //       y: 120,
+        //       width: 300
+        //   }
+        const customBoxes = [];
+
+        // 3. FUNDO
+        // currentBgType: 'black' (fundo preto), 'imagem' (png/jpg/webp), 'gif' (gif animado) ou 'video' (mp4/webm)
+        const currentBgType = 'gif';
+        // currentBgUrl: nome do arquivo dentro da pasta BG_FOLDER (ex: 'fundo.jpg') ou um link completo (https://...)
+        const currentBgUrl = 'imagens/testefundo.gif';
+        // Pasta de imagens e vídeos, ao lado deste arquivo .html (ex: imagens/fundo.jpg)
+        const BG_FOLDER = 'imagens/';
+        // Opacidade do fundo: 1 = totalmente visível, 0.5 = escurecido (padrão), 0 = invisível
+        const BG_OPACITY = 0.5;
+
+        // 4. VELOCIDADE DA DIGITAÇÃO (milissegundos por caractere)
+        const TYPING_SPEED = 100;
+
+        // 5. O visitante pode arrastar as caixas pela tela? (true = sim, false = não)
+        const ALLOW_DRAGGING = true;
+
+        // 6. GANCHO DE RESPOSTAS
+        // Roda toda vez que o visitante responde uma pergunta. Use para guardar
+        // ou enviar as respostas (ex.: fetch para um servidor, Google Forms, etc.).
+        // Todas as respostas até agora ficam em "answers".
+        function onAnswer(key, value, answers) {
+            console.log(`Resposta registrada → ${key}:`, value, answers);
+        }
+
+        // 7. TEMA: CORES E FORMATOS
+        //
+        // PALETAS DE COR — cada paleta tem os tons 50 a 950 (do mais claro ao mais escuro),
+        // no padrão do Tailwind. Use hex de 6 dígitos (#rrggbb).
+        // PARA ADICIONAR UMA COR: copie um bloco, troque o nome e os valores.
+        // Depois use o nome em qualquer classe do HTML: bg-rosa-500, text-rosa-300, border-rosa-600/40...
+        const COLORS = {
+            roxo: {
+                50: '#faf5ff', 100: '#f3e8ff', 200: '#e9d5ff', 300: '#d8b4fe', 400: '#c084fc', 500: '#a855f7',
+                600: '#9333ea', 700: '#7e22ce', 800: '#6b21a8', 900: '#581c87', 950: '#3b0764'
+            },
+            rosa: {
+                50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185', 500: '#f43f5e',
+                600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337', 950: '#4c0519'
+            },
+            esmeralda: {
+                50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981',
+                600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b', 950: '#022c22'
+            },
+            ceu: {
+                50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9',
+                600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e', 950: '#082f49'
+            },
+            vermelho: {
+                50: '#FFF4F2', 100: '#FFE3DB', 200: '#FFCCBF', 300: '#FAA996', 400: '#ED7961', 500: '#E2583F',
+                600: '#D63523', 700: '#CD0D0D', 800: '#9A180E', 900: '#80190E', 950: '#4C160B'
+            },
+        };
+
+        // COR DE DESTAQUE DO SITE (botões, bordas, brilho, nome do personagem...).
+        // Escreva o nome de uma paleta acima. Para recolorir o site inteiro, troque só esta linha.
+        const ACCENT = 'vermelho';
+
+        // FORMATOS — qualquer medida CSS: '0' (reto), '0.5rem', '1rem', '24px'...
+        const SHAPES = {
+            dialogo: '1rem',        // cantos da caixa principal de diálogo
+            caixaLivre: '0.75rem',  // cantos das caixas livres
+            botao: '0.5rem',        // cantos de botões e campo de resposta
+            bordaDialogo: '2px',    // espessura da borda da caixa principal
+            bordaCaixaLivre: '1px'  // espessura da borda das caixas livres
+        };
+
+        // --- Aplica o tema (não precisa mexer daqui para baixo) ---
+        const destaque = COLORS[ACCENT] || Object.values(COLORS)[0];
+        const rgb = hex => { const n = parseInt(hex.replace('#', ''), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255].join(', '); };
+        const root = document.documentElement.style;
+        root.setProperty('--accent-rgb', rgb(destaque[500]));
+        root.setProperty('--borda-dialogo', SHAPES.bordaDialogo);
+        root.setProperty('--borda-livre', SHAPES.bordaCaixaLivre);
+        tailwind.config = {
+            theme: { extend: {
+                colors: { ...COLORS, destaque },
+                borderRadius: { dialogo: SHAPES.dialogo, caixa: SHAPES.caixaLivre, botao: SHAPES.botao }
+            } }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Yuji+Boku&display=swap:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --accent-rgb: 168, 85, 247; --borda-dialogo: 2px; --borda-livre: 1px; }
+        body { font-family: 'Yuji Boku', sans-serif; background-color: #000; color: #fff; overflow: hidden; user-select: none; }
+        input { user-select: text; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+        .glass-panel {
+            background: rgba(10, 10, 12, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+        .caixa-livre { border-width: var(--borda-livre); border-color: rgba(255, 255, 255, 0.2); }
+        .vn-dialogue-box {
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    border: 40px solid transparent;
+    border-image: url('imagens/testedialogo2.png') 40 fill / 40px stretch;
+}
+        .draggable { position: absolute; cursor: grab; }
+        .draggable:active { cursor: grabbing; }
+        /* Se ALLOW_DRAGGING = false no código, nada mais pode ser arrastado */
+        .no-drag .draggable, .no-drag .drag-handle { cursor: default !important; }
+        .no-drag .drag-hint { display: none; }
+    </style>
+</head>
+<body class="w-screen h-screen relative">
+
+    <!-- FUNDO -->
+    <div id="background-container" class="absolute inset-0 w-full h-full z-0 bg-black overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-tr from-black via-zinc-950 to-destaque-950 opacity-60"></div>
+        <video id="bg-video" autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover opacity-50 hidden"></video>
+        <img id="bg-image" src="" alt="" class="absolute inset-0 w-full h-full object-cover opacity-50 hidden">
+    </div>
+
+    <!-- PALCO -->
+    <div id="stage" class="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+
+        <!-- CAIXA PRINCIPAL DE DIÁLOGO -->
+        <div id="vn-box" class="draggable pointer-events-auto vn-dialogue-box rounded-dialogo p-6 w-[90%] md:w-[600px] max-h-[88vh] overflow-y-auto left-1/2 -translate-x-1/2 bottom-8 z-20">
+            <div class="drag-handle relative w-full flex items-center justify-center pb-3 mb-2 border-b border-white/10 cursor-grab">
+                <span id="speaker-name" class="font-bold tracking-wide text-destaque-300 text-sm md:text-base uppercase">Narrador</span>
+                <div class="drag-hint absolute right-0 flex items-center space-x-2 text-xs text-zinc-400">
+                    <i class="fa-solid fa-arrows-up-down-left-right text-destaque-400/70"></i>
+                </div>
+            </div>
+
+            <div id="dialogue-text-container" class="min-h-[80px] max-h-[150px] text-center overflow-y-auto px-5 text-zinc-100 text-base md:text-lg leading-relaxed font-light whitespace-pre-line"></div>
+
+            <!-- ÁREA DE RESPOSTA (aparece só quando o passo tem uma pergunta) -->
+            <div id="answer-area" class="hidden mt-4"></div>
+
+            <div class="flex items-center justify-center mt-4 pt-3 border-t border-white/10">
+                <div class="flex items-center space-x-2">
+                    <button id="btn-prev" onclick="prevDialogue()" class="px-3 py-1.5 rounded-botao bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition flex items-center space-x-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        <span>Anterior</span>
+                    </button>
+                    <button id="btn-next" onclick="nextDialogue()" class="px-4 py-1.5 rounded-botao bg-destaque-600 hover:bg-destaque-500 text-white text-xs font-semibold shadow-lg shadow-destaque-900/40 transition flex items-center space-x-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <span>Avançar</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAIXAS DE TEXTO LIVRES (criadas a partir do código) -->
+        <div id="custom-boxes-container" class="absolute inset-0 pointer-events-none"></div>
+    </div>
+
+    <!-- BARRA SUPERIOR -->
+    <div class="absolute top-4 left-4 right-4 z-30 flex items-center justify-end pointer-events-none">
+        <button onclick="resetStory()" class="glass-panel px-3.5 py-2.5 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-zinc-800 transition pointer-events-auto" title="Reiniciar história" aria-label="Reiniciar história">
+            <i class="fa-solid fa-rotate-right"></i>
+        </button>
+    </div>
+
+    <!-- AVISO (TOAST) -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 glass-panel px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-destaque-400 text-lg"></i>
+        <span id="toast-msg" class="text-xs text-zinc-200 font-medium"></span>
+    </div>
+
+    <script>
+        /*
+        =============================================================================
+        ⚙️ LÓGICA DO SISTEMA (NÃO É NECESSÁRIO MODIFICAR ABAIXO DESTA LINHA)
+        =============================================================================
+        */
+
+        const $ = id => document.getElementById(id);
+        const answers = {};
+        const history = [];
+        let current = 0, isTyping = false, awaiting = false, replied = false, pending = null;
+        let typingTimer, toastTimer, skipTyping = null;
+
+        // Troca {chave} pela resposta guardada
+        const fmt = s => String(s ?? '').replace(/\{(\w+)\}/g, (_, k) => answers[k] ?? '—');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!ALLOW_DRAGGING) document.body.classList.add('no-drag');
+            applyBackground();
+            buildBoxes();
+            showStep(0);
+            if (ALLOW_DRAGGING) makeDraggable($('vn-box'));
+
+            document.addEventListener('keydown', e => {
+                if (e.target.tagName === 'INPUT') return;
+                if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); nextDialogue(); }
+                else if (e.code === 'ArrowLeft') { e.preventDefault(); prevDialogue(); }
+            });
+        });
+
+        // --- ARRASTAR (mouse e toque) ---
+        function makeDraggable(el) {
+            const handle = el.querySelector('.drag-handle') || el;
+            handle.style.touchAction = 'none';
+            handle.addEventListener('pointerdown', e => {
+                if (e.target.closest('button')) return;
+                const r = el.getBoundingClientRect();
+                const dx = e.clientX - r.left, dy = e.clientY - r.top;
+                el.style.transform = 'none';
+                el.style.bottom = 'auto';
+                el.style.left = r.left + 'px';
+                el.style.top = r.top + 'px';
+                handle.setPointerCapture(e.pointerId);
+                const move = ev => {
+                    el.style.left = Math.min(Math.max(0, ev.clientX - dx), window.innerWidth - 60) + 'px';
+                    el.style.top = Math.min(Math.max(0, ev.clientY - dy), window.innerHeight - 40) + 'px';
+                };
+                const up = () => {
+                    handle.removeEventListener('pointermove', move);
+                    handle.removeEventListener('pointerup', up);
+                };
+                handle.addEventListener('pointermove', move);
+                handle.addEventListener('pointerup', up);
+            });
+        }
+
+        // --- MOTOR DE DIÁLOGOS ---
+        // Mostra um texto com efeito de digitação; "done" roda quando o texto termina.
+        function say(speaker, raw, done) {
+            const text = fmt(raw), chars = [...text], out = $('dialogue-text-container');
+            $('speaker-name').textContent = speaker;
+            out.textContent = '';
+            clearTimeout(typingTimer);
+            isTyping = true;
+            let i = 0;
+            skipTyping = () => {
+                clearTimeout(typingTimer);
+                isTyping = false;
+                skipTyping = null;
+                out.textContent = text;
+                if (done) done();
+            };
+            (function tick() {
+                if (i < chars.length) {
+                    out.textContent += chars[i++];
+                    out.scrollTop = out.scrollHeight;
+                    typingTimer = setTimeout(tick, TYPING_SPEED);
+                } else skipTyping();
+            })();
+        }
+
+        function showStep(index) {
+            const step = dialogues[index];
+            if (!step) return;
+            current = index;
+            awaiting = false;
+            replied = false;
+            pending = null;
+            closeAnswer();
+            say(step.speaker, step.text, () => { if (step.question) openQuestion(step); });
+            updateButtons();
+        }
+
+        function advance() {
+            const step = dialogues[current];
+            const dest = pending ?? step.goto;
+            let next = current + 1;
+            if (dest != null) {
+                const found = dialogues.findIndex(d => d.id === dest);
+                if (found >= 0) next = found;
+                else console.warn(`goto "${dest}" não encontrado: nenhum passo tem esse id.`);
+            }
+            if (next >= dialogues.length) { showToast("Em breve nos veremos."); return; }
+            history.push(current);
+            showStep(next);
+        }
+
+        function nextDialogue() {
+            if (isTyping) { skipTyping(); return; }
+            if (awaiting) return;
+            advance();
+        }
+
+        function prevDialogue() {
+            if (replied) { showStep(current); return; }   // volta para a pergunta
+            if (history.length) showStep(history.pop());
+        }
+
+        function resetStory() {
+            Object.keys(answers).forEach(k => delete answers[k]);
+            history.length = 0;
+            refreshBoxes();
+            showStep(0);
+            showToast("História reiniciada do início.");
+        }
+
+        function updateButtons() {
+            $('btn-next').disabled = awaiting;
+            $('btn-prev').disabled = !history.length && !replied;
+        }
+
+        // --- PERGUNTAS ---
+        function closeAnswer() {
+            const area = $('answer-area');
+            area.classList.add('hidden');
+            area.innerHTML = '';
+        }
+
+        function openQuestion(step) {
+            const q = step.question, area = $('answer-area');
+            area.innerHTML = '';
+            area.classList.remove('hidden');
+            awaiting = true;
+            updateButtons();
+
+            if (q.type === 'text') {
+                area.className = 'mt-4 flex items-center gap-2';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = q.maxLength || 40;
+                input.placeholder = q.placeholder || 'Digite sua resposta...';
+                input.setAttribute('aria-label', 'Sua resposta');
+                input.className = 'flex-1 min-w-0 bg-black/50 border border-destaque-500/40 rounded-botao px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-destaque-400';
+                const btn = document.createElement('button');
+                btn.textContent = 'Responder';
+                btn.className = 'px-4 py-2 rounded-botao bg-destaque-600 hover:bg-destaque-500 text-white text-xs font-semibold transition';
+                const send = () => {
+                    const v = input.value.trim();
+                    if (!v) { showToast("Vai fugir?"); return; }
+                    submitAnswer(step, v);
+                };
+                btn.onclick = send;
+                input.onkeydown = e => { if (e.key === 'Enter') send(); };
+                area.append(input, btn);
+                input.focus();
+            } else {
+                area.className = 'mt-4 flex flex-col gap-2';
+                (q.options || []).forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.textContent = fmt(opt.label);
+                    btn.className = 'w-full text-left px-4 py-2.5 rounded-botao border border-destaque-500/40 bg-destaque-600/10 hover:bg-destaque-600/40 text-sm text-zinc-100 transition';
+                    btn.onclick = () => submitAnswer(step, opt.value ?? opt.label, opt);
+                    area.append(btn);
+                });
+            }
+        }
+
+        function submitAnswer(step, value, opt) {
+            const q = step.question;
+            answers[q.key] = value;
+            onAnswer(q.key, value, answers);
+            refreshBoxes();
+            awaiting = false;
+            closeAnswer();
+            pending = (opt && opt.goto != null) ? opt.goto : (q.goto != null ? q.goto : null);
+            const reply = (opt && opt.reply) || q.reply;
+            if (reply) {
+                replied = true;
+                say(q.replySpeaker || step.speaker, reply);
+                updateButtons();
+            } else {
+                advance();
+            }
+        }
+
+        // --- CAIXAS LIVRES (somente leitura) ---
+        function buildBoxes() {
+            const container = $('custom-boxes-container');
+            customBoxes.forEach(b => {
+                const el = document.createElement('div');
+                el.className = 'draggable pointer-events-auto glass-panel caixa-livre rounded-caixa p-4 shadow-xl';
+                el.style.width = `${b.width || 300}px`;
+                el.style.left = `${b.x}px`;
+                el.style.top = `${b.y}px`;
+                el.innerHTML = `
+                    <div class="drag-handle pb-2 mb-2 border-b border-white/10 cursor-grab">
+                        <span class="box-title text-xs font-semibold text-destaque-300 uppercase tracking-wider"></span>
+                    </div>
+                    <div class="box-body text-xs text-zinc-200 leading-relaxed whitespace-pre-line"></div>`;
+                el._src = b;
+                container.appendChild(el);
+                if (ALLOW_DRAGGING) makeDraggable(el);
+            });
+            refreshBoxes();
+        }
+
+        // Atualiza apenas os textos (mantém a posição das caixas)
+        function refreshBoxes() {
+            $('custom-boxes-container').childNodes.forEach(el => {
+                el.querySelector('.box-title').textContent = fmt(el._src.title);
+                el.querySelector('.box-body').textContent = fmt(el._src.content);
+            });
+        }
+
+        // --- FUNDO ---
+        function applyBackground() {
+            if (!currentBgUrl || currentBgType === 'black') return;
+            // Link completo (http, data:, /) é usado como está; nome de arquivo vem da pasta BG_FOLDER
+            let src = String(currentBgUrl).trim().replace(/\\/g, '/').replace(/^\.\//, '');
+            if (!/^(https?:|data:|\/)/.test(src) && !src.startsWith(BG_FOLDER)) src = BG_FOLDER + src;
+            console.info('Fundo: carregando', src);
+            const fail = () => {
+                console.error(`Não foi possível carregar o fundo: ${src}`);
+                showToast(`Fundo não encontrado: ${src}`);
+            };
+            if (currentBgType === 'video') {
+                const v = $('bg-video');
+                v.onerror = fail;
+                v.src = src;
+                v.style.opacity = BG_OPACITY;
+                v.classList.remove('hidden');
+                v.play().catch(err => console.error("Erro ao reproduzir vídeo:", err));
+            } else if (['imagem', 'image', 'gif'].includes(currentBgType)) {
+                const img = $('bg-image');
+                img.onerror = fail;
+                img.src = src;
+                img.style.opacity = BG_OPACITY;
+                img.classList.remove('hidden');
+            } else {
+                console.warn(`currentBgType "${currentBgType}" não reconhecido. Use 'black', 'imagem', 'gif' ou 'video'.`);
+            }
+        }
+
+        // --- AVISO ---
+        function showToast(msg) {
+            const t = $('toast');
+            $('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+    </script>
+</body>
+</html>
